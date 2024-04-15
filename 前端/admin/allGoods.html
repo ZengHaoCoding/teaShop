@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <script type="text/javascript" src="../common/modal.js"></script>
+    <script type="text/javascript" src="../admin/admin_common/common.js"></script>
+    <title>管理中心 - 清饮吧</title>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var settings = {
+                "url": "http://127.0.0.1:8085/admin/getAllGoods",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (response) {
+                var goods_info = response.data;
+                var tmp = 1;
+                goods_info.forEach(goods => {
+                    var item = "";
+                    item += "<tr>";
+                    item += "                                <th scope=\"row\">" + tmp + "<\/th>";
+                    item += "                                <td>" + goods.create_uid + "<\/td>";
+                    item += "                                <td><img src=\"..\/img\/goods\/" + goods.goods_img + "\" style=\"width:7rem;height: 7rem;\"class=\"mr-3\" alt=\"商品图片\"><\/td>";
+                    item += "                                <td style=\"width:20%;\"><p style=\"display: -webkit-box;-webkit-line-clamp: 3;-webkit-box-orient: vertical;overflow: hidden;\">" + goods.goods_name + "</p><\/td>";
+                    item += "                                <td>" + goods.goods_money + "<\/td>";
+                    item += "                                <td>" + printGoodsStatus(goods.status) + "<\/td>";
+                    item += "                                <td>";
+                    item += "                                    <button value=\"" + goods.goods_id + "&" + goods.status + "\" id=\"set_status\" type=\"button\" class=\"btn btn-outline-primary btn-sm\">" + printGoodsStatus2(goods.status) + "<\/button>";
+                    item += "                                    <button value=\"" + goods.goods_id + "\" id=\"set_info\" type=\"button\" class=\"btn btn-outline-primary btn-sm\">修改<\/button>";
+                    item += "                                <\/td>";
+                    item += "                            <\/tr>";
+                    $("#goods_list").append(item);
+                    tmp += 1;
+                });
+            });
+
+            $("button#set_status").click(function () {
+                var goods_id = $(this).val().split("&")[0];
+                var status = $(this).val().split("&")[1];
+                if (status == "1") {
+                    status = "0"
+                } else {
+                    status = "1"
+                }
+                var settings = {
+                    "url": "http://127.0.0.1:8085/seller/goods/update",
+                    "method": "POST",
+                    "timeout": 0,
+                    "data": JSON.stringify({
+                        "goods_id": goods_id,
+                        "status": status
+                    }),
+                    "async": false,
+                    "crossDomain": true,
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings).done(function (response) {
+                    location.reload(true);
+                });
+            });
+
+            $("button#set_info").click(function () {
+                $('#update-goods-modal').modal('show');
+                var goods_id = $(this).val();
+                var old_goods_info = get_goods_info(goods_id).data[0];
+                $("input#old_goods_id").val(goods_id);
+                $("input#old_goods_name").val(old_goods_info.goods_name);
+                $("input#old_weight_unit").val(old_goods_info.weight_unit);
+                $("input#old_goods_money").val(old_goods_info.goods_money);
+            });
+
+            $("#update_goods").click(function () {
+                var goods_id = $("#old_goods_id").val();
+                var goods_name = $("#old_goods_name").val();
+                var weight_unit = $("#old_weight_unit").val();
+                var goods_money = $("#old_goods_money").val();
+                var settings = {
+                    "url": "http://127.0.0.1:8085/seller/goods/update",
+                    "method": "POST",
+                    "timeout": 0,
+                    "data": JSON.stringify({
+                        "goods_id": goods_id,
+                        "goods_name": goods_name,
+                        "weight_unit": weight_unit,
+                        "goods_money": goods_money
+                    }),
+                    "async": false,
+                    "crossDomain": true,
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings).done(function (response) {
+                    $('#update-goods-modal').modal('hide');
+                    $('#success-modal').modal('show');
+                });
+            });
+
+            $("#success-reload").click(function () {
+                location.reload(true);
+            });
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../admin/admin_common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">管理端</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">全部商品信息
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./admin_common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">序号</th>
+                                <th scope="col">卖家UID</th>
+                                <th scope="col">商品图片</th>
+                                <th scope="col">商品名称</th>
+                                <th scope="col">单价</th>
+                                <th scope="col">状态</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="goods_list">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <!-- update-goods-modal -->
+    <div class="modal fade" id="update-goods-modal" tabindex="-1" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">商品修改</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="info">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroup-sizing-default">商品ID</span>
+                            </div>
+                            <input id="old_goods_id" type="text" class="form-control"
+                                aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default" disabled>
+                        </div>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroup-sizing-default">商品名称</span>
+                            </div>
+                            <input id="old_goods_name" type="text" class="form-control"
+                                aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default">
+                        </div>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroup-sizing-default">商品规格</span>
+                            </div>
+                            <input id="old_weight_unit" type="text" class="form-control"
+                                aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default">
+                        </div>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroup-sizing-default">商品价格(元)</span>
+                            </div>
+                            <input id="old_goods_money" type="text" class="form-control"
+                                aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" id="update_goods">添加</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

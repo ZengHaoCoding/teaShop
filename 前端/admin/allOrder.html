@@ -1,0 +1,194 @@
+<?php
+require "getall.html";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <title>管理中心 - 清饮吧</title>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var settings = {
+                "url": "http://127.0.0.1:8085/admin/getAllOrder",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (response) {
+                var orderInfo = response.data;
+                var tmp = 1;
+                for (let index = 0; index < orderInfo.length; index++) {
+                    var order = orderInfo[index];
+                    var item = "";
+                    item += "<tr>";
+                    item += "                                <th scope=\"row\">" + tmp + "<\/th>";
+                    item += "                                <td>" + order.order_id + "<\/td>";
+                    item += "                                <td>" + printOrderName(order.order_detail) + "<\/td>";
+                    item += "                                <td>" + printOrderNumber(order.order_detail) + "<\/td>";
+                    item += "                                <td>" + printOrderStatus(order.status) + "<\/td>";
+                    item += "                                <td>";
+                    item += "                                <button value=\"" + order.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-primary btn-sm\">详情<\/button>";
+                    item += "                                <\/td>";
+                    item += "                            <\/tr>";
+                    $("#order_list").append(item);
+                    tmp += 1;
+
+                }
+            });
+
+            $("button#detail").click(function () {
+                var order_id = $(this).attr("value");
+                var settings = {
+                    "url": "http://127.0.0.1:8085/order/getOrderDetail/" + order_id,
+                    "method": "GET",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "headers": {
+                        "token": window.localStorage.getItem("token")
+                    },
+                };
+
+                $.ajax(settings).done(function (response) {
+                    $("div#modal_address").empty();
+                    $("div#modal_goods").empty();
+                    $("div#modal_info").empty();
+                    var address_info = "";
+                    address_info += "<p>" + response.data[0].post_name + "&nbsp;&nbsp;&nbsp;&nbsp;" + response.data[0].post_mobile + "<\/p>";
+                    address_info += "<p>" + response.data[0].post_address + "<\/p>";
+                    if (response.data[0].status > 1) {
+                        address_info += "<hr/><p>快递单号：" + response.data[0].tracking_number + "<\/p>";
+                    }
+
+
+                    var order_info = "";
+                    order_info += "<p>实付款：" + response.data[0].order_money + "<\/p>";
+                    order_info += "<p>下单时间：" + response.data[0].create_time + "<\/p>";
+                    order_info += "<p>订单编号：" + response.data[0].order_id + "<\/p>";
+                    order_info += "<p>买家UID：" + response.data[0].uid + "<\/p>";
+                    order_info += "<p>卖家名称（UID）：" + response.data[0].seller_name + "（" + response.data[0].seller_uid + "）<\/p>";
+
+                    for (let index = 0; index < response.data[0].order_detail.length; index++) {
+                        var goods = response.data[0].order_detail[index]
+                        var goodsCart = "";
+                        goodsCart += "<div class=\"media\">";
+                        goodsCart += "                        <img src=\"..\/img\/goods\/" + goods.goods_img + "\" style=\"width:10rem;height: 10rem;\"";
+                        goodsCart += "                            class=\"mr-3\" alt=\"商品图片\">";
+                        goodsCart += "                        <div class=\"media-body\">";
+                        goodsCart += "                            <h5 class=\"mt-0\">" + goods.goods_name + "<\/h5>";
+
+                        goodsCart += "                        <\/div>";
+                        goodsCart += "                        <div style=\"margin: 5% 1% 0 5%;width: 30%;\">";
+                        goodsCart += "                            <ul class=\"pagination\">";
+                        goodsCart += "                                <p style=\"margin-top: 4%;\">数量：<\/p>";
+                        goodsCart += "                                <li class=\"page-item disabled\"><a class=\"page-link\" href=\"#\"  aria-current=\"page\">" + goods.number + "<\/a><\/li>";
+                        goodsCart += "                            <\/ul>";
+                        goodsCart += "                                <p style=\"margin-top: 4%;\">单价：" + goods.goods_money;
+                        goodsCart += "                                <\/p>";
+                        goodsCart += "                        <\/div>";
+                        goodsCart += "                    <\/div>";
+                        goodsCart += "                    <hr \/>";
+                        $("div#modal_goods").append(goodsCart);
+                    }
+
+                    $("div#modal_address").append(address_info);
+                    $("div#modal_info").append(order_info);
+
+                    $("#detail-order-modal").modal('show');
+                });
+            });
+
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../admin/admin_common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">管理端</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">全部订单记录
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./admin_common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">序号</th>
+                                <th scope="col">订单编号</th>
+                                <th scope="col">商品名称</th>
+                                <th scope="col">数量</th>
+                                <th scope="col">状态</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="order_list">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <!-- detail-order-modal -->
+    <div class="modal fade" id="detail-order-modal" tabindex="-1" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">订单详情</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal_address">
+                    </div>
+                    <hr />
+                    <div id="modal_goods"></div>
+                    <div id="modal_info">
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="./css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./css/common.css" />
+    <script type="text/javascript" src="./jquery.js"></script>
+    <script type="text/javascript" src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="./common/common.js"></script>
+    <script type="text/javascript" src="./common/modal.js"></script>
+    <title>购物车 - 清饮吧</title>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var settings = {
+                "url": "http://127.0.0.1:8085/cart/getCartInfo",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (response) {
+                var cartInfo = response.data;
+                if (cartInfo != null) {
+                    cartInfo.forEach(cart => {
+                        var goodsCart = "";
+                        goodsCart += "<div class=\"media\">";
+                        goodsCart += "                        <div style=\"margin: 5% 5% 0 2%;\">";
+                        goodsCart += "                            <input style=\"width: 1rem;height: 1rem;\" type=\"checkbox\" value=\"" + cart.goods_id + "&" + cart.number + "\" name=\"goods\">";
+                        goodsCart += "                        <\/div>";
+                        goodsCart += "                        <img src=\".\/img\/goods\/" + cart.goods_img + "\" style=\"width:10rem;height: 10rem;\"";
+                        goodsCart += "                            class=\"mr-3\" alt=\"商品图片\">";
+                        goodsCart += "                        <div class=\"media-body\">";
+                        goodsCart += "                            <h5 class=\"mt-0\">" + cart.goods_name + "<\/h5>";
+                        goodsCart += "                            <p>价格：" + cart.goods_money;
+                        goodsCart += "                            <\/p>";
+                        goodsCart += "                        <\/div>";
+                        goodsCart += "                        <div style=\"margin: 5% 5% 0 2%;\">";
+                        goodsCart += "                            <ul class=\"pagination\">";
+                        goodsCart += "                                <p style=\"margin-top: 4%;\">数量：<\/p>";
+                        goodsCart += "                                <li class=\"page-item\">";
+                        goodsCart += "                                    <a class=\"page-link\" href=\"#\">";
+                        goodsCart += "                                        <span id=\"dec\" aria-hidden=\"true\" value=\"" + cart.goods_id + "\">-<\/span>";
+                        goodsCart += "                                    <\/a>";
+                        goodsCart += "                                <\/li>";
+                        goodsCart += "                                <li class=\"page-item disabled\"><a class=\"page-link\" href=\"#\"  aria-current=\"page\">" + cart.number + "<\/a><\/li>";
+                        goodsCart += "                                <li class=\"page-item\">";
+                        goodsCart += "                                    <a class=\"page-link\" href=\"#\">";
+                        goodsCart += "                                        <span id=\"add\" aria-hidden=\"true\" value=\"" + cart.goods_id + "\">+<\/span>";
+                        goodsCart += "                                    <\/a>";
+                        goodsCart += "                                <\/li>";
+                        goodsCart += "                            <\/ul>";
+                        goodsCart += "                        <\/div>";
+                        goodsCart += "                    <\/div>";
+                        goodsCart += "                    <hr \/>";
+
+                        $("#cart_list").append(goodsCart);
+                    });
+                }else{
+                    $("#main").empty();
+                    $("#main").append("<div class=\"alert alert-primary\" role=\"alert\">当前尚未添加商品，快去购物吧<\/div>");
+                }
+
+            });
+
+            $("button#add").click(function () {
+                var goods_id = $(this).attr("value");
+                console.log(goods_id);
+                var settings1 = {
+                    "url": "http://127.0.0.1:8085/cart/add",
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "data": JSON.stringify({
+                        "goods_id": goods_id,
+                        "number": 1
+                    }),
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings1).done(function (response) {
+                    location.reload(true);
+                });
+            });
+
+            $("button#dec").click(function () {
+                var goods_id = $(this).attr("value");
+                var settings1 = {
+                    "url": "http://127.0.0.1:8085/cart/dec",
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "data": JSON.stringify({
+                        "goods_id": goods_id
+                    }),
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings1).done(function (response) {
+                    location.reload(true);
+                });
+            });
+
+            $("#select").click(function () {
+                if ($("#select").val() == "0") {
+                    $("#select").html("取消选择");
+                    $("#select").val("1");
+                    $("input[name='goods']").prop('checked', true);
+                } else {
+                    $("#select").html("全选");
+                    $("#select").val("0");
+                    $("input[name='goods']").prop('checked', false);
+                }
+            });
+
+            $("#buy").click(function () {
+                //获取已选择数据
+                var arry = "";
+                var arry_len = $("input[name='goods']:checked").length;
+                $("input[name='goods']:checked").each(function (index, element) {
+                    //追加到数组中
+                    var tmp = $(this).val().split("&");
+                    arry += tmp[0] + "+" + tmp[1]
+                    if (index != arry_len - 1) {
+                        arry += "-"
+                    }
+                });
+                //编码成有规律字符串的形式
+                //url编码，拼接到跳转链接上
+                window.location.replace("./checkorder.html?data=" + encodeURI(arry) + "&source=cart");
+            });
+        });
+        
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <script type="text/javascript" src="common/nav.js"></script>
+
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="index.html">首页</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">购物车</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <script type="text/javascript" src="common/left_info.js"></script>
+
+            <!-- 右侧商品橱窗 -->
+            <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                <div id="cart_list">
+
+                </div>
+                <div>
+                    <div style="float: left;width: 40%;">
+                        <button style="margin-left: 5%;" id="select" value="0" type="button"
+                            class="btn btn-info">全选</button>
+                    </div>
+                    <div style="float: right;width: 40%;">
+                        <button style="float: right;margin-right: 10%;" id="buy" type="button"
+                            class="btn btn-primary">提交订单</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <script src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

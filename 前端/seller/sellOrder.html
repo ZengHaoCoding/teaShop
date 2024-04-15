@@ -1,0 +1,280 @@
+<?php
+require "getall.html";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.min.js"
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <script type="text/javascript" src="../common/modal.js"></script>
+    <title>销售记录 - 清饮吧</title>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var settings = {
+                "url": "http://127.0.0.1:8085/seller/getSellOrder",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (response) {
+                var order_list = response.data;
+                if (order_list.length > 0) {
+                    var tmp = 1;
+                    order_list.forEach(o => {
+                        var order = "";
+                        order += "<tr>";
+                        order += "                                <th scope=\"row\">" + tmp + "<\/th>";
+                        order += "                                <td>" + o.order_id + "<\/td>";
+                        order += "                                <td>" + printOrderName(o.order_detail) + "<\/td>";
+                        order += "                                <td>" + printOrderNumber(o.order_detail) + "<\/td>";
+                        order += "                                <td>" + printOrderStatus(o.status) + "<\/td>";
+                        order += "                                <td>";
+                        if (o.status == "0") {
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-info btn-sm\">详情<\/button>";
+                        } else if (o.status == "1") {
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"open_send_out_modal\" type=\"button\" class=\"btn btn-outline-primary btn-sm\">发货<\/button>";
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-info btn-sm\">详情<\/button>";
+                        } else if (o.status == "2") {
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-info btn-sm\">详情<\/button>";
+                        } else if (o.status == "3") {
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-info btn-sm\">详情<\/button>";
+                        }
+                        order += "                                <\/td>";
+                        order += "                            <\/tr>";
+                        $("#order_list").append(order);
+                        tmp += 1;
+                    });
+                } else {
+                    $("#main").append("<div class=\"alert alert-primary\" role=\"alert\">当前无人下单<\/div>")
+                }
+            });
+
+            $("button#success-reload").click(function () {
+                location.reload(true);
+            });
+
+            // $("button#close").click(function () {
+            //     location.reload(true);
+            // });
+
+            $("button#detail").click(function () {
+                var order_id = $(this).attr("value");
+                var settings = {
+                    "url": "http://127.0.0.1:8085/order/getOrderDetail/" + order_id,
+                    "method": "GET",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "headers": {
+                        "token": window.localStorage.getItem("token")
+                    },
+                };
+
+                $.ajax(settings).done(function (response) {
+                    $("div#modal_address").empty();
+                    $("div#modal_goods").empty();
+                    $("div#modal_info").empty();
+                    var address_info = "";
+                    address_info += "<p>" + response.data[0].post_name + "&nbsp;&nbsp;&nbsp;&nbsp;" + response.data[0].post_mobile + "<\/p>";
+                    address_info += "<p>" + response.data[0].post_address + "<\/p>";
+                    if (response.data[0].status > 1) {
+                        address_info += "<hr/><p>快递单号：" + response.data[0].tracking_number + "<\/p>";
+                    }
+
+
+                    var order_info = "";
+                    order_info += "<p>实付款：" + response.data[0].order_money + "<\/p>";
+                    order_info += "<p>下单时间：" + response.data[0].create_time + "<\/p>";
+                    order_info += "<p>订单编号：" + response.data[0].order_id + "<\/p>";
+                    order_info += "<p>买家UID：" + response.data[0].uid + "<\/p>";
+
+                    for (let index = 0; index < response.data[0].order_detail.length; index++) {
+                        var goods = response.data[0].order_detail[index]
+                        var goodsCart = "";
+                        goodsCart += "<div class=\"media\">";
+                        goodsCart += "                        <img src=\"..\/img\/goods\/" + goods.goods_img + "\" style=\"width:10rem;height: 10rem;\"";
+                        goodsCart += "                            class=\"mr-3\" alt=\"商品图片\">";
+                        goodsCart += "                        <div class=\"media-body\">";
+                        goodsCart += "                            <h5 class=\"mt-0\">" + goods.goods_name + "<\/h5>";
+
+                        goodsCart += "                        <\/div>";
+                        goodsCart += "                        <div style=\"margin: 5% 1% 0 5%;width: 30%;\">";
+                        goodsCart += "                            <ul class=\"pagination\">";
+                        goodsCart += "                                <p style=\"margin-top: 4%;\">数量：<\/p>";
+                        goodsCart += "                                <li class=\"page-item disabled\"><a class=\"page-link\" href=\"#\"  aria-current=\"page\">" + goods.number + "<\/a><\/li>";
+                        goodsCart += "                            <\/ul>";
+                        goodsCart += "                                <p style=\"margin-top: 4%;\">单价：" + goods.goods_money;
+                        goodsCart += "                                <\/p>";
+                        goodsCart += "                        <\/div>";
+                        goodsCart += "                    <\/div>";
+                        goodsCart += "                    <hr \/>";
+                        $("div#modal_goods").append(goodsCart);
+                    }
+
+                    $("div#modal_address").append(address_info);
+                    $("div#modal_info").append(order_info);
+
+                    $("#detail-order-modal").modal('show');
+                });
+            });
+
+            $("button#open_send_out_modal").click(function () {
+                $("input#order_id").val($(this).val());
+                $('#send-out-modal').modal('show');
+            });
+
+            $("button#send_out").click(function () {
+                var order_id = $("input#order_id").val();
+                var tracking_number = $("#tracking_number").val();
+                var settings = {
+                    "url": "http://127.0.0.1:8085/order/snedOutGoods",
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "data": JSON.stringify({
+                        "order_id": order_id,
+                        "tracking_number": tracking_number
+                    }),
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings).done(function (response) {
+                    $('#send-out-modal').modal('hide');
+                    $('#success-modal').modal('show');
+                });
+            });
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../seller/seller_common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">卖家端</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">销售记录
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./seller_common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">序号</th>
+                                <th scope="col">订单编号</th>
+                                <th scope="col">商品名称</th>
+                                <th scope="col">数量</th>
+                                <th scope="col">状态</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="order_list">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <!-- send-out-modal -->
+    <div class="modal fade" id="send-out-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">发货填单</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="info">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroup-sizing-default">订单编号</span>
+                            </div>
+                            <input id="order_id" type="text" class="form-control" aria-label="Sizing example input"
+                                aria-describedby="inputGroup-sizing-default" disabled>
+                        </div>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroup-sizing-default">快递单号</span>
+                            </div>
+                            <input id="tracking_number" type="text" class="form-control"
+                                aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" id="send_out">确认发货</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- detail-order-modal -->
+    <div class="modal fade" id="detail-order-modal" tabindex="-1" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">订单详情</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal_address">
+                    </div>
+                    <hr />
+                    <div id="modal_goods"></div>
+                    <div id="modal_info">
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

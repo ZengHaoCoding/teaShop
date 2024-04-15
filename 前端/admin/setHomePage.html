@@ -1,0 +1,178 @@
+<?php
+require "getall.html";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <script type="text/javascript" src="../common/modal.js"></script>
+    <title>推荐页设置 - 清饮吧</title>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var settings = {
+                "url": "http://127.0.0.1:8085/home/recommandPage",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+            };
+
+            $.ajax(settings).done(function (response) {
+                var homePage = response.data;
+                if (homePage.length > 0) {
+                    for (let index = 0; index < homePage.length; index++) {
+                        var page = homePage[index];
+                        var item = "";
+                        item += "<tr>";
+                        item += "                                <th scope=\"row\">" + index + 1 + "<\/th>";
+                        item += "                                <td>" + page.id + "<\/td>";
+                        item += "                                <td>" + page.title + "<\/td>";
+                        item += "                                <td><img src=\"..\/img\/homePage\/" + page.image + "\" style=\"width:18rem;height: 10rem;\"class=\"mr-3\" alt=\"推荐页\"><\/td>";
+                        item += "                                <td>";
+                        item += "                                <button value=\"" + page.id + "\" id=\"remove\" type=\"button\" class=\"btn btn-outline-secondary btn-sm\">删除<\/button>";
+                        item += "                                <\/td>";
+                        item += "                            <\/tr>";
+                        $("#page_list").append(item);
+
+                    }
+                }else {
+                    $("#main").append("<div class=\"alert alert-primary\" role=\"alert\">当前无卖家权限申请<\/div>")
+                }
+            });
+
+            var settings = {
+                "url": "http://127.0.0.1:8085/goods",
+                "method": "GET",
+                "timeout": 0,
+            };
+
+            $.ajax(settings).done(function (response) {
+                var goodsData = response.data;
+                goodsData.forEach(goods => {
+                    $("#goods").append("<option value=\"" + goods.goods_id + "\">" + goods.goods_id + " | " + goods.goods_name + "<\/option>");
+                });
+            });
+
+            $("button#add").click(function () {
+                var form = new FormData();
+                var fileInput = $("#page_img");
+                if ($("#page_img").fileInput != undefined && $("#title").val() != "" && $("#goods").find("option:selected").val() != "") {
+                    form.append("file", fileInput[0].files[0]);
+                    form.append("title", $("#title").val());
+                    form.append("goods_id", $("#goods").find("option:selected").val());
+
+                    var settings = {
+                        "url": "http://127.0.0.1:8085/home/setPage",
+                        "method": "POST",
+                        "timeout": 0,
+                        "async": false,
+                        "crossDomain": true,
+                        "headers": {
+                            "token": window.localStorage.getItem("token")
+                        },
+                        "processData": false,
+                        "mimeType": "multipart/form-data",
+                        "contentType": false,
+                        "data": form
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        $("#success-modal").modal('show');
+                    });
+                } else {
+                    $('#data-failed-modal').modal('show');
+                }
+
+            });
+
+            $("button#success-reload").click(function () {
+                location.reload(true);
+            });
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../admin/admin_common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">管理端</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">首页推荐页设置
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./admin_common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <h3>已添加的推荐页</h3>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">序号</th>
+                                <th scope="col">主题</th>
+                                <th scope="col">展示图</th>
+                                <th scope="col">关联商品</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="page_list">
+
+                        </tbody>
+                    </table>
+                    <h3>添加推荐页</h3>
+                    <hr />
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="inputGroup-sizing-default">推荐页主题</span>
+                        </div>
+                        <input id="title" type="text" class="form-control" aria-label="Sizing example input"
+                            aria-describedby="inputGroup-sizing-default">
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="inputGroupFileAddon01">推荐页图片</span>
+                        </div>
+                        <input style="margin-top: 3px;margin-left: 4px;" type="file" id="page_img">
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <label class="input-group-text" for="inputGroupSelect01">关联商品</label>
+                        </div>
+                        <select class="custom-select" id="goods">
+                            <option selected>请选择</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" style="float: right;margin-right: 10px;"
+                        id="add">添加</button>
+                    <div style="height: 190px;"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

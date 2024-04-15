@@ -1,0 +1,133 @@
+<?php
+require "getall.html";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <script type="text/javascript" src="../common/modal.js"></script>
+    <script type="text/javascript" src="./admin_common/common.js"></script>
+    <title>管理中心 - 清饮吧</title>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var settings = {
+                "url": "http://127.0.0.1:8085/admin/getApplySeller",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (response) {
+                var userInfo = response.data;
+                if (userInfo.length > 0) {
+                    for (let index = 0; index < userInfo.length; index++) {
+                        var user = userInfo[index];
+                        var item = "";
+                        item += "<tr>";
+                        item += "                                <th scope=\"row\">" + index + 1 + "<\/th>";
+                        item += "                                <td>" + user.uid + "<\/td>";
+                        item += "                                <td>" + user.seller_name + "<\/td>";
+                        item += "                                <td>" + printSellerStatus(user) + "<\/td>";
+                        item += "                                <td>";
+                        item += "                                <button value=\"" + user.uid + "\" id=\"pass\" type=\"button\" class=\"btn btn-outline-success btn-sm\">允许提权<\/button>";
+                        item += "                                <\/td>";
+                        item += "                            <\/tr>";
+                        $("#user_list").append(item);
+                    }
+                } else {
+                    $("#main").append("<div class=\"alert alert-primary\" role=\"alert\">当前无卖家权限申请<\/div>")
+                }
+
+            });
+
+            $("#success-reload").click(function () {
+                location.reload(true);
+            });
+
+            $("button#pass").click(function () {
+                var uid = $(this).attr("value");
+                var settings = {
+                    "url": "http://127.0.0.1:8085/admin/passSeller",
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "data": JSON.stringify({
+                        "uid": uid
+                    }),
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings).done(function (response) {
+                    $("#success-modal").modal('show');
+                });
+            });
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../admin/admin_common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">管理端</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">卖家权限审核
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./admin_common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">序号</th>
+                                <th scope="col">UID</th>
+                                <th scope="col">卖家名称</th>
+                                <th scope="col">状态</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user_list">
+
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

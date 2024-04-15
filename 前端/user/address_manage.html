@@ -1,0 +1,143 @@
+<?php
+require "getall.html";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <title>地址管理 - 清饮吧</title>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var address_info = get_address_info().data;
+            address_info.forEach(address => {
+                var strVar = "";
+                strVar += "<li class=\"list-group-item\" style=\"height: 80px;\">";
+                strVar += "                            <p style=\"float: left;\">";
+                strVar += address.post_name;
+                strVar += "                                &nbsp;&nbsp;&nbsp;&nbsp;";
+                strVar += address.post_mobile;
+                strVar += "                                <br\/>";
+                strVar += address.post_address;
+                strVar += "                            <\/p>";
+                strVar += "                            <div style=\"float: right;\"><button type=\"submit\" class=\"btn btn-info button_remove\" id=\"button_remove\" value=\"" + address.address_id + "\">删除<\/button><\/div>";
+                strVar += "                        <\/li>";
+
+                $("#address-list").append(strVar);
+            });
+
+            $("#button_submit").click(function () {
+                const post_name = $("input#post_name").val();
+                const post_mobile = $("input#post_mobile").val();
+                const post_address = $("input#post_address").val();
+                if (post_name != "" && post_mobile != "" && post_address != "") {
+                    var settings = {
+                        "url": "http://127.0.0.1:8085/user/addAddress",
+                        "method": "POST",
+                        "timeout": 0,
+                        "async": true,
+                        "crossDomain": true,
+                        "data": JSON.stringify({
+                            "post_name": post_name,
+                            "post_mobile": post_mobile,
+                            "post_address": post_address
+                        }),
+                        "headers": {
+                            "token": window.localStorage.getItem("token"),
+                            "Content-Type": "application/json"
+                        },
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        console.log(response);
+                    });
+                }
+                location.reload(true);
+            });
+            $(".btn.btn-info.button_remove").click(function () {
+                var address_id = $(this).val();
+                var settings = {
+                    "url": "http://127.0.0.1:8085/user/removeAddress",
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": true,
+                    "crossDomain": true,
+                    "data": JSON.stringify({
+                            "address_id": address_id
+                        }),
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings).done(function (response) {
+                    location.reload(true);
+                });
+            });
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../common/nav2.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="../index.html">首页</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">地址管理</li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="../common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <ul class="list-group">
+                        <div id="address-list">
+                            <li class="list-group-item list-group-item-secondary" aria-current="true">已保存地址</li>
+                        </div>
+
+                    </ul>
+                    <hr />
+                    <h3>新增地址</h3>
+                    <div class="form-group">
+                        <label for="exampleInputPassword1">收件人</label>
+                        <input type="text" class="form-control" id="post_name">
+                    </div>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">联系方式</label>
+                        <input type="text" class="form-control" id="post_mobile" aria-describedby="emailHelp">
+                    </div>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">邮寄地址</label>
+                        <input type="text" class="form-control" id="post_address" aria-describedby="emailHelp">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="button_submit">提交</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

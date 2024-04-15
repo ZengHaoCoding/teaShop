@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <script type="text/javascript" src="../common/modal.js"></script>
+    <script type="text/javascript" src="./seller_common/work_doc_div.js"></script>
+
+    <title>工单处理 - 清饮吧</title>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var order_id = window.location.search.substring(1).split("=")[1];
+            var seller_uid = "";
+            var wd_id = "";
+            var settings1 = {
+                "url": "http://127.0.0.1:8085/order/getOrderDetail/" + order_id,
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings1).done(function (response) {
+                $("div#modal_address").empty();
+                $("div#modal_goods").empty();
+                $("div#modal_info").empty();
+                var address_info = "";
+                address_info += "<p>" + response.data[0].post_name + "&nbsp;&nbsp;&nbsp;&nbsp;" + response.data[0].post_mobile + "<\/p>";
+                address_info += "<p>" + response.data[0].post_address + "<\/p>";
+                if (response.data[0].status > 1) {
+                    address_info += "<hr/><p>快递单号：" + response.data[0].tracking_number + "<\/p>";
+                }
+
+
+                var order_info = "";
+                order_info += "<p>实付款：" + response.data[0].order_money + "<\/p>";
+                order_info += "<p>下单时间：" + response.data[0].create_time + "<\/p>";
+                order_info += "<p>订单编号：" + response.data[0].order_id + "<\/p>";
+                order_info += "<p>卖家名称：" + response.data[0].seller_name + "（" + response.data[0].seller_uid + "）<\/p>";
+                seller_uid = response.data[0].seller_uid
+
+                for (let index = 0; index < response.data[0].order_detail.length; index++) {
+                    var goods = response.data[0].order_detail[index]
+                    var goodsCart = "";
+                    goodsCart += "<div class=\"media\">";
+                    goodsCart += "                        <img src=\"..\/img\/goods\/" + goods.goods_img + "\" style=\"width:10rem;height: 10rem;\"";
+                    goodsCart += "                            class=\"mr-3\" alt=\"商品图片\">";
+                    goodsCart += "                        <div class=\"media-body\">";
+                    goodsCart += "                            <h5 class=\"mt-0\">" + goods.goods_name + "<\/h5>";
+                    goodsCart += "                        <\/div>";
+                    goodsCart += "                        <div style=\"margin: 5% 1% 0 5%;width: 30%;\">";
+                    goodsCart += "                            <ul class=\"pagination\">";
+                    goodsCart += "                                <p style=\"margin-top: 4%;\">数量：<\/p>";
+                    goodsCart += "                                <li class=\"page-item disabled\"><a class=\"page-link\" href=\"#\"  aria-current=\"page\">" + goods.number + "<\/a><\/li>";
+                    goodsCart += "                            <\/ul>";
+                    goodsCart += "                                <p style=\"margin-top: 4%;\">单价：" + goods.goods_money;
+                    goodsCart += "                                <\/p>";
+                    goodsCart += "                        <\/div>";
+                    goodsCart += "                    <\/div>";
+                    goodsCart += "                    <hr \/>";
+                    $("div#modal_goods").append(goodsCart);
+                }
+                $("div#modal_address").append(address_info);
+                $("div#modal_info").append(order_info);
+            });
+
+            var settings2 = {
+                "url": "http://127.0.0.1:8085/workdoc/" + order_id,
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings2).done(function (response) {
+                var all_msg = response.data;
+                if (all_msg != null) {
+                    wd_id = all_msg.id;
+                    var other = all_msg.seller_uid;
+                    var mine = all_msg.buyer_uid;
+                    var detail = all_msg.detail;
+                    var buyer_uid = all_msg.buyer_id;
+                    detail.forEach(msg => {
+                        if (msg.create_uid == buyer_uid) {
+                            $("div#wd_body").append(other_div(msg));
+                        } else if (msg.create_uid == seller_uid) {
+                            $("div#wd_body").append(mine_div(msg));
+                        }
+                    });
+                } else {
+                    $("#create-modal").modal('show');
+                }
+
+            });
+
+            $("button#sumbit_comment").click(function () {
+                var form = new FormData();
+                var fileInput = $("#contant_img");
+                var url = "http://127.0.0.1:8085/workdoc/send";
+                if (fileInput[0].files[0] != undefined) {
+                    form.append("file", fileInput[0].files[0]);
+                    url = "http://127.0.0.1:8085/workdoc/sendandfile"
+                }
+                form.append("wd_contant", $("#wd_contant").val());
+                form.append("wd_id", wd_id);
+                var settings = {
+                    "url": url,
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "headers": {
+                        "token": window.localStorage.getItem("token")
+                    },
+                    "processData": false,
+                    "mimeType": "multipart/form-data",
+                    "contentType": false,
+                    "data": form
+                };
+
+                $.ajax(settings).done(function (response) {
+                    $('#success-modal').modal('show');
+                });
+            });
+
+            $("button#create_work_doc").click(function () {
+                var settings = {
+                    "url": "http://127.0.0.1:8085/workdoc/create",
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "data": JSON.stringify({
+                        "order_id": order_id,
+                        "seller_uid": seller_uid,
+                        "status": "0"
+                    }),
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings).done(function (response) {
+                    $('create-modal').modal('hide   ');
+                    $('#success-modal').modal('show');
+                });
+            });
+
+            $("#success-reload").click(function () {
+                location.reload(true);
+            });
+
+        });
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../seller/seller_common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">首页</a></li>
+                        <li class="breadcrumb-item"><a href="workdocsystem.html">工单系统</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">提交工单
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./seller_common/left_info.js"></script>
+
+                <!-- 右侧订单信息 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <h3>
+                        <button class="btn btn-primary" type="button" data-toggle="collapse"
+                            data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+                            查看商品详情
+                        </button>
+                    </h3>
+                    <div class="collapse" id="collapseExample">
+                        <div id="goods_info">
+                            <div id="modal_address">
+                            </div>
+                            <hr />
+                            <div id="modal_goods"></div>
+                            <div id="modal_info">
+
+                            </div>
+                        </div>
+                        <hr />
+                    </div>
+
+                    <h3>工单记录</h3>
+                    <hr />
+
+                    <div id="wd_body">
+
+
+
+                    </div>
+
+                    <div id="sumbit_wd">
+                        <h3>提交工单</h3>
+                        <hr />
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">提交内容</span>
+                            </div>
+                            <textarea id="wd_contant" class="form-control" aria-label="With textarea"></textarea>
+                        </div>
+                        <br />
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroupFileAddon01">上传图片</span>
+                            </div>
+                            <input style="margin-top: 3px;margin-left: 4px;" type="file" id="contant_img">
+                        </div>
+                        <button id="sumbit_comment" style="float: right;" type="button"
+                            class="btn btn-success">提交</button>
+                    </div>
+                    <div style="height: 150px;"></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- create-Modal -->
+    <div class="modal fade" id="create-modal" data-backdrop="static" data-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">提示</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    该订单尚未创建工单，是否创建？
+                </div>
+                <div class="modal-footer">
+                    <button id="back" type="button" class="btn btn-secondary">返回</button>
+                    <button id="create_work_doc" type="button" class="btn btn-primary">创建</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

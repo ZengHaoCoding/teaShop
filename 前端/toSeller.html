@@ -1,0 +1,144 @@
+<?php
+require "getall.html";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="./css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./css/common.css" />
+    <script type="text/javascript" src="./jquery.js"></script>
+    <script type="text/javascript" src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="./common/common.js"></script>
+    <script type="text/javascript" src="./common/modal.js"></script>
+    <title>卖家权限申请 - 清饮吧</title>
+    <script type="text/javascript">
+
+        function get_seller_info() {
+            var response = "";
+            var settings = {
+                "url": "http://127.0.0.1:8085/seller/getSellerInfo",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "dataType": "json",
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (r) {
+                response = r;
+            });
+            return response;
+        }
+
+        $(document).ready(function () {
+            var seller_info = get_seller_info().data;
+            if (seller_info.length > 0) {
+                if (seller_info[0].status == "0") {
+                    $("#main").empty();
+                    $("#main").append("<h3>卖家申请正在审核中...</h3>");
+                }else{
+                    $("#main").empty();
+                    $("#main").append("<h3>你已经是卖家权限了</h3>");
+                }
+
+            }
+
+            $("#success-reload").click(function () {
+                window.location.replace("./index.html");
+            });
+            $("#button_submit").click(function () {
+                const seller_name = $("input#seller_name").val();
+                const real_name = $("input#real_name").val();
+                const contact_info = $("input#contact_info").val();
+                const card_number = $("input#card_number").val();
+                if (seller_name != "") {
+                    var settings = {
+                        "url": "http://127.0.0.1:8085/user/addSeller",
+                        "method": "POST",
+                        "timeout": 0,
+                        "async": true,
+                        "crossDomain": true,
+                        "data": JSON.stringify({
+                            "seller_name": seller_name,
+                            "real_name": real_name,
+                            "contact_info": contact_info,
+                            "card_number": card_number
+                        }),
+                        "headers": {
+                            "token": window.localStorage.getItem("token"),
+                            "Content-Type": "application/json"
+                        },
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        $('#success-modal').modal('show');
+                    });
+                }
+
+            });
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="./common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="./index.html">首页</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">卖家权限申请</li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+
+                    <h3>申请成为卖家</h3>
+                    <hr/>
+                    <h4>卖家信息填写</h4>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">卖家名称</label>
+                        <input type="text" class="form-control" id="seller_name">
+                    </div>
+                    <h4>收款信息填写</h4>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">姓名</label>
+                        <input type="text" class="form-control" id="real_name">
+                    </div>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">联系方式</label>
+                        <input type="text" class="form-control" id="contact_info">
+                    </div>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">提现卡号</label>
+                        <input type="text" class="form-control" id="card_number">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="button_submit">提交申请</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

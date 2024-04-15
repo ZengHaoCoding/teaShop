@@ -1,0 +1,10 @@
+#per_info{
+    width:60%;
+    height:120px;
+    margin-top: 0px;
+    margin-right: 10%;
+    padding-top: 8px;
+    border-left-style: solid;
+    border-color: rgba(0,0,0,.125);
+    border-width: 1px;
+}

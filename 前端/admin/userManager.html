@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <script type="text/javascript" src="./admin_common/common.js"></script>
+    <title>管理中心 - 清饮吧</title>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var settings = {
+                "url": "http://127.0.0.1:8085/admin/getAllUser",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (response) {
+                var userInfo = response.data;
+                var tmp = 1;
+                for (let index = 0; index < userInfo.length; index++) {
+                    var user = userInfo[index];
+                    var item = "";
+                    item += "<tr>";
+                    item += "                                <th scope=\"row\">" + tmp + "<\/th>";
+                    item += "                                <td>" + user.uid + "<\/td>";
+                    item += "                                <td>" + user.username + "<\/td>";
+                    item += "                                <td>" + user.contact_info + "<\/td>";
+                    item += "                                <td>" + printUserRole2(user) + "<\/td>";
+                    item += "                                <td>" + printBalance(user) + "<\/td>";
+                    item += "                                <td>";
+                    item += "                                <button value=\"" + user.uid + "\" id=\"address_info\" type=\"button\" class=\"btn btn-outline-primary btn-sm\">地址信息<\/button>";
+                    if (user.role <= "2") {
+                        item += "                                <button value=\"" + user.uid + "\" id=\"seller_deatil\" type=\"button\" class=\"btn btn-outline-success btn-sm\">收款信息<\/button>";
+
+                    }
+                    item += "                                <\/td>";
+                    item += "                            <\/tr>";
+                    $("#user_list").append(item);
+                    tmp += 1;
+
+                }
+            });
+
+            $("button#address_info").click(function () {
+                var uid = $(this).val();
+                var address_info = get_address_info_by_uid(uid).data;
+                address_info.forEach(address => {
+                    var strVar = "";
+                    strVar += "<li class=\"list-group-item\" style=\"height: 80px;\">";
+                    strVar += "                            <p style=\"float: left;\">";
+                    strVar += address.post_name;
+                    strVar += "                                &nbsp;&nbsp;&nbsp;&nbsp;";
+                    strVar += address.post_mobile;
+                    strVar += "                                <br\/>";
+                    strVar += address.post_address;
+                    strVar += "                            <\/p>";
+                    strVar += "                        <\/li>";
+
+                    $("#address-list").empty();
+                    $("#address-list").append(strVar);
+                });
+                $('#address-modal').modal('show');
+            });
+
+
+            $("button#seller_deatil").click(function () {
+                var uid = $(this).val();
+                var settings = {
+                    "url": "http://127.0.0.1:8085/admin/getSellerInfo",
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "token": window.localStorage.getItem("token")
+                    },
+                    "data": JSON.stringify({
+                        "uid": uid
+                    }),
+                };
+
+                $.ajax(settings).done(function (response) {
+                    var detail = response.data;
+                    var strVar = "";
+                    strVar += "<p>卖家名称：" + detail.seller_name + "<\/p>";
+                    strVar += "<p>真实姓名：" + detail.real_name + "<\/p>";
+                    strVar += "<p>联系方式：" + detail.contact_info + "<\/p>";
+                    strVar += "<p>收款卡号：" + detail.card_number + "<\/p>";
+                    $("#seller-list").empty();
+                    $("#seller-list").append(strVar);
+                });
+
+                $('#user-detail-modal').modal('show');
+            });
+
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../admin/admin_common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">管理端</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">用户管理
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./admin_common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">序号</th>
+                                <th scope="col">UID</th>
+                                <th scope="col">用户名</th>
+                                <th scope="col">联系方式</th>
+                                <th scope="col">权限</th>
+                                <th scope="col">余额</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user_list">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <!-- address-modal -->
+    <div class="modal fade" id="address-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">用户地址信息</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="address-list">
+                        <li class="list-group-item list-group-item-secondary" aria-current="true">已保存地址</li>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- user-detail-modal -->
+    <div class="modal fade" id="user-detail-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">卖家详细信息</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="seller-list">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="./css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./css/common.css" />
+    <script type="text/javascript" src="./jquery.js"></script>
+    <script type="text/javascript" src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="./common/common.js"></script>
+    <script type="text/javascript" src="./common/modal.js"></script>
+    <title>确认下单 - 清饮吧</title>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // 解析url后面参数
+            var data = window.location.search.substring(1).split("&")[0].split("=")[1].split("-");
+            var source = window.location.search.substring(1).split("&")[1]
+            var sumPrice = 0;
+            var order_id = "";
+            var address_info = get_address_info().data;
+            address_info.forEach(address => {
+                var strVar = "";
+                strVar += "<button type=\"button\" class=\"list-group-item list-group-item-action check-address\">";
+                strVar += "     <input style=\"float: left;width:10%;margin-top:3%;\" type=\"radio\" value=\"" + address.address_id + "\" name=\"address-select\">";
+                strVar += "                            <p style=\"float: right;width:90%;\">";
+                strVar += address.post_name;
+                strVar += "                                &nbsp;&nbsp;&nbsp;&nbsp;";
+                strVar += address.post_mobile;
+                strVar += "                                <br\/>";
+                strVar += address.post_address;
+                strVar += "                            <\/p>";
+                strVar += "<\/button>";
+
+                $("#address-list").append(strVar);
+            });
+
+            $(".list-group-item.list-group-item-action.check-address").click(function () {
+                $(this).children("input[name='address-select']").prop("checked", true);
+            });
+
+            for (let index = 0; index < data.length; index++) {
+                data[index] = data[index].split("+");
+                var cart = get_goods_info(data[index][0]).data[0];
+                var goodsCart = "";
+                goodsCart += "<div class=\"media\">";
+                goodsCart += "                        <img src=\".\/img\/goods\/" + cart.goods_img + "\" style=\"width:10rem;height: 10rem;\"";
+                goodsCart += "                            class=\"mr-3\" alt=\"商品图片\">";
+                goodsCart += "                        <div class=\"media-body\">";
+                goodsCart += "                            <h5 class=\"mt-0\">" + cart.goods_name + "<\/h5>";
+
+                goodsCart += "                        <\/div>";
+                goodsCart += "                        <div style=\"margin: 5% 5% 0 2%;width: 30%;\">";
+                goodsCart += "                            <ul class=\"pagination\">";
+                goodsCart += "                                <p style=\"margin-top: 4%;\">数量：<\/p>";
+                goodsCart += "                                <li class=\"page-item disabled\"><a class=\"page-link\" href=\"#\"  aria-current=\"page\">" + data[index][1] + "<\/a><\/li>";
+                goodsCart += "                                <p style=\"margin-top: 4%;\">|单价：" + cart.goods_money;
+                goodsCart += "                                |<\/p>";
+                goodsCart += "                                <p class=\"sumPrice\" style=\"margin-top: 4%;color:red;\" value=\"" + cart.goods_money * data[index][1] + "\">共：" + cart.goods_money * data[index][1];
+                goodsCart += "                                <\/p>";
+                goodsCart += "                            <\/ul>";
+                goodsCart += "                        <\/div>";
+                goodsCart += "                    <\/div>";
+                goodsCart += "                    <hr \/>";
+
+                $("#goods_list").append(goodsCart);
+            }
+
+            $("button#success-reload").click(function () {
+                window.location.replace("./index.html");
+            });
+
+            $("button#pay-order").click(function () {
+                $("#success-create-modal").modal('hide');
+                console.log(order_id);
+                for (let index = 0; index < order_id.length; index++) {
+                    pay_order(order_id[index]);
+                }
+                $("#success-pay-modal").modal('show');
+            });
+
+            $("p.sumPrice").each(function (index, element) {
+                sumPrice += parseFloat($(this).attr("value"));
+            });
+
+            $("#price").html(sumPrice);
+
+            $("#create-order").click(function () {
+                var address_id = "";
+                $("input[name='address-select']:checked").each(function (index, element) {
+                    address_id = $(this).val();
+                });
+                if (address_id != "") {
+                    var postData = [];
+                    for (let index = 0; index < data.length; index++) {
+                        postData[index] = { "goods_id": data[index][0], "number": data[index][1] }
+                    }
+                    var settings = {
+                        "url": "http://127.0.0.1:8085/order/create/" + address_id,
+                        "method": "POST",
+                        "timeout": 0,
+                        "async": false,
+                        "crossDomain": true,
+                        "data": JSON.stringify(postData),
+                        "headers": {
+                            "token": window.localStorage.getItem("token"),
+                            "Content-Type": "application/json"
+                        },
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        order_id = response.data;
+                        
+                        $("#success-create-modal").modal('show');
+                    });
+                } else {
+                    $('#data-failed-modal').modal('show');
+                }
+            });
+        });
+
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">首页</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">确认下单</li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="common/left_info.js"></script>
+
+
+
+                <!-- 右侧确认订单页面 -->
+                <div style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <h4>选择地址</h4>
+                    <hr />
+                    <div class="list-group" id="address-list">
+
+                    </div>
+                    <br />
+                    <h4>确认订单</h4>
+                    <hr />
+                    <div id="goods_list"></div>
+                    <h5 style="margin-left: 75%;">结算金额：<span id="price"></span></h5>
+
+                    <hr />
+                    <button id="create-order" style="float: right;width: 150px;margin-right: 60px;" type="button"
+                        class="btn btn-success">结算</button>
+                    <div style="height: 150px;"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <!-- success-modal -->
+    <div class="modal fade" id="success-create-modal" tabindex="-1" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">订单创建成功！请支付</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-center">
+                        <svg t="1673618252071" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                            xmlns="http://www.w3.org/2000/svg" p-id="2732" width="64" height="64">
+                            <path
+                                d="M512 149.333333c200.298667 0 362.666667 162.368 362.666667 362.666667s-162.368 362.666667-362.666667 362.666667S149.333333 712.298667 149.333333 512 311.701333 149.333333 512 149.333333z m0 64c-164.949333 0-298.666667 133.717333-298.666667 298.666667s133.717333 298.666667 298.666667 298.666667 298.666667-133.717333 298.666667-298.666667-133.717333-298.666667-298.666667-298.666667z m169.045333 127.04l45.909334 44.586667-271.829334 279.722667-136.832-141.952 46.08-44.416 90.944 94.336 225.728-232.277334z"
+                                fill="#1afa29" p-id="2733"></path>
+                        </svg>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="pay-order">立刻支付</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            id="success-reload">稍后支付</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- success-pay-modal -->
+    <div class="modal fade" id="success-pay-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">支付成功</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-center">
+                        <svg t="1673618252071" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                            xmlns="http://www.w3.org/2000/svg" p-id="2732" width="64" height="64">
+                            <path
+                                d="M512 149.333333c200.298667 0 362.666667 162.368 362.666667 362.666667s-162.368 362.666667-362.666667 362.666667S149.333333 712.298667 149.333333 512 311.701333 149.333333 512 149.333333z m0 64c-164.949333 0-298.666667 133.717333-298.666667 298.666667s133.717333 298.666667 298.666667 298.666667 298.666667-133.717333 298.666667-298.666667-133.717333-298.666667-298.666667-298.666667z m169.045333 127.04l45.909334 44.586667-271.829334 279.722667-136.832-141.952 46.08-44.416 90.944 94.336 225.728-232.277334z"
+                                fill="#1afa29" p-id="2733"></path>
+                        </svg>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            id="success-reload">返回首页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

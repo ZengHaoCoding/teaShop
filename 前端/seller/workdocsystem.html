@@ -1,0 +1,115 @@
+<?php
+require "getall.html";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="../css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../css/common.css" />
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="../common/common.js"></script>
+    <script type="text/javascript" src="./seller_common/common.js"></script>
+    <title>工单系统 - 清饮吧</title>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var settings = {
+                "url": "http://127.0.0.1:8085/workdoc/list",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (response) {
+                var wd_list = response.data;
+                if (wd_list.length > 0) {
+                    var tmp = 1;
+                    for (let index = 0; index < wd_list.length; index++) {
+                        var wd = wd_list[index];
+                        var item = "";
+                        item += "<tr>";
+                        item += "                                <th scope=\"row\">" + tmp + "<\/th>";
+                        item += "                                <td>" + wd.order_id + "<\/td>";
+                        item += "                                <td>" + date2String("YYYY-mm-dd HH:MM", wd.create_time) + "<\/td>";
+                        item += "                                <td>" + printMsgStatus2(wd.status) + "<\/td>";
+                        item += "                                <td>";
+                        if (wd.status == "0") {
+                            item += "                                    <button value=\"" + wd.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-dark btn-sm\">回复<\/button>";
+
+                        }else{
+                            item += "                                    <button value=\"" + wd.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-success btn-sm\">立即回复<\/button>";
+                        }
+                        item += "                                <\/td>";
+                        item += "                            <\/tr>";
+                        $("tbody#wd_list").append(item);
+                        tmp += 1;
+
+                    }
+                } else {
+                    $("#main").append("<div class=\"alert alert-primary\" role=\"alert\">当前无工单记录<\/div>")
+                }
+            });
+
+
+            $("button#detail").click(function () {
+                window.location.replace("./workdoc.html?data=" + $(this).val());
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="../seller/seller_common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">卖家端</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">工单系统
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="./seller_common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">序号</th>
+                                <th scope="col">订单编号</th>
+                                <th scope="col">创建时间</th>
+                                <th scope="col">状态</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wd_list">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="../css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

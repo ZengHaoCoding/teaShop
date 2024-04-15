@@ -1,0 +1,109 @@
+<?php
+require "getall.html";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="./css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./css/common.css" />
+    <script type="text/javascript" src="./jquery.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-7ymO4nGrkm372HoSbq1OY2DP4pEZnMiA+E0F3zPr+JQQtQ82gQ1HPY3QIVtztVua" crossorigin="anonymous"></script> -->
+    <script type="text/javascript" src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="./css/bootstrap-4.6.1-dist/js/bootstrap.min.js"
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="./common/goods_card.js"></script>
+    <script type="text/javascript" src="./common/modal.js"></script>
+    <title>商品搜索 - 清饮吧</title>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var key_words = window.location.search.substring(1).split("=")[1];
+            var settings = {
+                "url": "http://127.0.0.1:8085/goods/search/" + key_words,
+                "method": "GET",
+                "timeout": 0,
+            };
+
+            $.ajax(settings).done(function (response) {
+                var loginStatus = false;
+                if (window.localStorage.getItem("token") != null) {
+                    loginStatus = true;
+                }
+                var goodsData = response.data;
+                goodsData.forEach(goods => {
+                    $("#goods_card").append(goods_card(goods, loginStatus));
+                });
+            });
+
+        });
+
+        $(document).on("click", "button[name='btn1']", function () {
+            var goods_id = $(this).val();
+            var settings1 = {
+                "url": "http://127.0.0.1:8085/cart/add",
+                "method": "POST",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "data": JSON.stringify({
+                    "goods_id": goods_id,
+                    "number": 1
+                }),
+                "headers": {
+                    "token": window.localStorage.getItem("token"),
+                    "Content-Type": "application/json"
+                },
+            };
+
+            $.ajax(settings1).done(function (response) {
+                $('#success-modal').modal('show');
+            });
+        });
+
+        $(document).on("click", "button[name='btn2']", function () {
+            var goods_id = $(this).val();
+            window.location.replace("./checkorder.html?data=" + goods_id + "+1");
+        });
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">首页</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">商品搜索
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="common/left_info.js"></script>
+                <!-- 右侧商品橱窗 -->
+                <div style="float: left; width: 74%; height: auto; margin-left:26%">
+
+
+                    <div id="goods_card"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

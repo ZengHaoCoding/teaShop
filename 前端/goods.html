@@ -1,0 +1,156 @@
+<?php
+require "getall.html";
+if (isset($_GET['item'])){
+    $goodsid = (string)$_GET['item'];
+    $goods = getSqlSub(2,$goodsid);
+}else{
+    echo "非法访问！";
+    header("location:index.html");
+}
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="./css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./css/common.css" />
+    <script type="text/javascript" src="./jquery.js"></script>
+    <script type="text/javascript" src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="./common/common.js"></script>
+    <script type="text/javascript" src="./common/modal.js"></script>
+    <title>
+        商品详情 - 清饮吧
+    </title>
+    <script>
+
+        $(document).ready(function () {
+            var goods_id = window.location.search.substring(1).split('=')[1];
+            var goods_info = get_goods_info(goods_id).data[0];
+            var goods_comment = get_goods_conment(goods_id).data;
+            $("title").text(goods_info.goods_name + " - 清饮吧");
+            $("#goods_name").text(goods_info.goods_name);
+            $("#price").text("价格：" + goods_info.goods_money);
+            $("#weight_unit").text("规格：" + goods_info.weight_unit);
+            $("#seller_info").text("卖家名称：" + goods_info.seller_name);
+            $("#goods_img").attr("src", "./img/goods/" + goods_info.goods_img);
+            if (goods_comment.length > 0) {
+                goods_comment.forEach(comment => {
+                    var comment_div = "";
+                    comment_div += "<div class=\"media\">";
+                    comment_div += "                        <div class=\"media-body\">";
+                    comment_div += "                            <h5 class=\"mt-0\">用户" + comment.uid + "丨商品好感度：" + printStart(comment.start) + "<\/h5>";
+                    comment_div += "                            <p>";
+                    comment_div += comment.content;
+                    comment_div += "                            <\/p>";
+                    comment_div += "                        <\/div>";
+                    comment_div += "                    <\/div>";
+
+                    $("#goods_comment").append(comment_div);
+                });
+            } else {
+                var strVar = "";
+                strVar += "<div class=\"alert alert-primary\" role=\"alert\">";
+                strVar += "  暂时没人购买，快去下第一单吧~";
+                strVar += "<\/div>";
+
+                $("#goods_comment").append(strVar);
+            }
+
+            $("button[name='btn1']").click(function () {
+                var settings1 = {
+                    "url": "http://127.0.0.1:8085/cart/add",
+                    "method": "POST",
+                    "timeout": 0,
+                    "async": false,
+                    "crossDomain": true,
+                    "data": JSON.stringify({
+                        "goods_id": goods_id,
+                        "number": 1
+                    }),
+                    "headers": {
+                        "token": window.localStorage.getItem("token"),
+                        "Content-Type": "application/json"
+                    },
+                };
+
+                $.ajax(settings1).done(function (response) {
+                    $('#success-modal').modal('show');
+                });
+            });
+
+            $("button[name='btn2']").click(function () {
+                window.location.replace("./checkorder.html?data=" + goods_id + "+1");
+            });
+        });
+
+    </script>
+</head>
+<div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+    <div style="
+            height: auto;
+        ">
+
+        <div>
+            <script type="text/javascript" src="common/nav.js"></script>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="index.html">首页</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">商品信息</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <script type="text/javascript" src="common/left_info.js"></script>
+            <!-- 右侧商品详情 -->
+            <div style="float: left; width: 74%; height: auto; margin-left:26%">
+                <div class="card mb-3" style="width: 100%; margin-top: 5px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img id="goods_img" style="padding: 20px; width: 15em;height: 15em" alt="goodsimg">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" id="goods_name">
+                                    商品名称
+                                </h5>
+                                <p class="card-text"><small class="text-muted" id="weight_unit">
+                                        商品规格
+                                    </small></p>
+                                <h4 style="color: red">
+                                    <p class="card-text" id="price">价格：
+                                        商品价格
+                                    </p>
+                                </h4>
+                                <div style="width: 90%;height: auto;margin-top: 50px;">
+                                    <button name="btn1" type="button" class="btn btn-primary btn-lg">加入购物车</button>
+                                    <button name="btn2" type="button" class="btn btn-info btn-lg"
+                                        style="color: white;">&nbsp;&nbsp;立即购买&nbsp;&nbsp;</button>
+                                </div>
+                                <p style="float: right;font-size: 10px;" id="seller_info">卖家名称：</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>商品评论</h3>
+                <hr />
+                <div id="goods_comment">
+
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    </body>
+
+</html>

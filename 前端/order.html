@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap 的 CSS 文件 -->
+    <link rel="stylesheet" href="./css/bootstrap-4.6.1-dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./css/common.css" />
+    <script type="text/javascript" src="./jquery.js"></script>
+    <script type="text/javascript" src="./css/bootstrap-4.6.1-dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="./common/common.js"></script>
+    <script type="text/javascript" src="./common/modal.js"></script>
+
+    <title>首页 - 清饮吧</title>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var comment_num = 0;
+            var settings = {
+                "url": "http://127.0.0.1:8085/order/getAllOrders",
+                "method": "GET",
+                "timeout": 0,
+                "async": false,
+                "crossDomain": true,
+                "headers": {
+                    "token": window.localStorage.getItem("token")
+                },
+            };
+
+            $.ajax(settings).done(function (response) {
+                var order_list = response.data;
+                if (order_list.length > 0) {
+                    var tmp = 1;
+                    order_list.forEach(o => {
+                        var order = "";
+                        order += "<tr>";
+                        order += "                                <th scope=\"row\">" + tmp + "<\/th>";
+                        order += "                                <td>" + printOrderName(o.order_detail) + "<\/td>";
+                        order += "                                <td>" + printOrderNumber(o.order_detail) + "<\/td>";
+                        order += "                                <td>" + o.order_money + "<\/td>";
+                        order += "                                <td>" + printOrderStatus(o.status) + "<\/td>";
+                        order += "                                <td>";
+                        if (o.status == "0") {
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"cancel\" type=\"button\" class=\"btn btn-outline-dark btn-sm\">取消订单<\/button>";
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"pay\" type=\"button\" class=\"btn btn-outline-primary btn-sm\">支付<\/button>";
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-info btn-sm\">详情<\/button>";
+                        } else if (o.status == "1") {
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-info btn-sm\">详情<\/button>";
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"find\" type=\"button\" class=\"btn btn-outline-success btn-sm\">联系卖家<\/button>";
+                        } else if (o.status == "2") {
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"confirm\" type=\"button\" class=\"btn btn-outline-primary btn-sm\">确认收货<\/button>";
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-info btn-sm\">详情<\/button>";
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"find\" type=\"button\" class=\"btn btn-outline-success btn-sm\">联系卖家<\/button>";
+                        } else if (o.status == "3") {
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"detail\" type=\"button\" class=\"btn btn-outline-info btn-sm\">详情<\/button>";
+                            if (!o.comment_status) {
+                                order += "                                    <button value=\"" + o.order_id + "\" id=\"comment\" type=\"button\" class=\"btn btn-outline-dark btn-sm\">评价<\/button>";
+                            }
+                            order += "                                    <button value=\"" + o.order_id + "\" id=\"find\" type=\"button\" class=\"btn btn-outline-success btn-sm\">联系卖家<\/button>";
+                        }
+                        order += "                                <\/td>";
+                        order += "                            <\/tr>";
+                        $("#order_list").append(order);
+                        tmp += 1;
+
+                    });
+                } else {
+                    $("#main").append("<div class=\"alert alert-primary\" role=\"alert\">当前无下单记录<\/div>")
+                }
+                $("button#pay").click(function () {
+                    var order_id = $(this).attr("value");
+                    if (pay_order({ "order_id": order_id })) {
+                        $("#success-pay-modal").modal('show');
+                    }
+                });
+
+                $("button#find").click(function () {
+                    var order_id = $(this).attr("value");
+                    window.location.replace("./workdoc.html?data=" + order_id);
+                });
+
+                $("button#cancel").click(function () {
+                    var order_id = $(this).attr("value");
+                    if (cancel_order({ "order_id": order_id })) {
+                        $("#success-modal").modal('show');
+                    }
+                });
+
+                $("button#success-reload").click(function () {
+                    location.reload(true);
+                });
+
+                $("button#detail").click(function () {
+                    var order_id = $(this).attr("value");
+                    var settings = {
+                        "url": "http://127.0.0.1:8085/order/getOrderDetail/" + order_id,
+                        "method": "GET",
+                        "timeout": 0,
+                        "async": false,
+                        "crossDomain": true,
+                        "headers": {
+                            "token": window.localStorage.getItem("token")
+                        },
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        $("div#modal_address").empty();
+                        $("div#modal_goods").empty();
+                        $("div#modal_info").empty();
+                        var address_info = "";
+                        address_info += "<p>" + response.data[0].post_name + "&nbsp;&nbsp;&nbsp;&nbsp;" + response.data[0].post_mobile + "<\/p>";
+                        address_info += "<p>" + response.data[0].post_address + "<\/p>";
+                        if (response.data[0].status > 1) {
+                            address_info += "<hr/><p>快递单号：" + response.data[0].tracking_number + "<\/p>";
+                        }
+
+
+                        var order_info = "";
+                        order_info += "<p>实付款：" + response.data[0].order_money + "<\/p>";
+                        order_info += "<p>下单时间：" + date2String("YYYY-mm-dd HH:MM", response.data[0].create_time) + "<\/p>";
+                        order_info += "<p>订单编号：" + response.data[0].order_id + "<\/p>";
+                        order_info += "<p>卖家名称：" + response.data[0].seller_name + "（" + response.data[0].seller_uid + "）<\/p>";
+
+                        for (let index = 0; index < response.data[0].order_detail.length; index++) {
+                            var goods = response.data[0].order_detail[index]
+                            var goodsCart = "";
+                            goodsCart += "<div class=\"media\">";
+                            goodsCart += "                        <img src=\".\/img\/goods\/" + goods.goods_img + "\" style=\"width:10rem;height: 10rem;\"";
+                            goodsCart += "                            class=\"mr-3\" alt=\"商品图片\">";
+                            goodsCart += "                        <div class=\"media-body\">";
+                            goodsCart += "                            <h5 class=\"mt-0\">" + goods.goods_name + "<\/h5>";
+                            goodsCart += "                        <\/div>";
+                            goodsCart += "                        <div style=\"margin: 5% 1% 0 5%;width: 30%;\">";
+                            goodsCart += "                            <ul class=\"pagination\">";
+                            goodsCart += "                                <p style=\"margin-top: 4%;\">数量：<\/p>";
+                            goodsCart += "                                <li class=\"page-item disabled\"><a class=\"page-link\" href=\"#\"  aria-current=\"page\">" + goods.number + "<\/a><\/li>";
+                            goodsCart += "                            <\/ul>";
+                            goodsCart += "                                <p style=\"margin-top: 4%;\">单价：" + goods.goods_money;
+                            goodsCart += "                                <\/p>";
+                            goodsCart += "                        <\/div>";
+                            goodsCart += "                    <\/div>";
+                            goodsCart += "                    <hr \/>";
+                            $("div#modal_goods").append(goodsCart);
+                        }
+
+                        $("div#modal_address").append(address_info);
+                        $("div#modal_info").append(order_info);
+
+                        $("#detail-order-modal").modal('show');
+                    });
+                });
+
+                $("button#comment").click(function () {
+                    $("div#comment_body").empty();
+                    var order_id = $(this).attr("value");
+                    var settings = {
+                        "url": "http://127.0.0.1:8085/order/getOrderDetail/" + order_id,
+                        "method": "GET",
+                        "timeout": 0,
+                        "async": false,
+                        "crossDomain": true,
+                        "headers": {
+                            "token": window.localStorage.getItem("token")
+                        },
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        $("#comment-modal").modal('show');
+                        comment_num = response.data[0].order_detail.length;
+                        for (let index = 0; index < comment_num; index++) {
+                            var goods = response.data[0].order_detail[index]
+                            var comment_div = "";
+                            comment_div += "<div value=\"" + goods.comment_id + "\" id=\"data_form_" + index + "\"><div class=\"media\">";
+                            comment_div += "                        <img src=\".\/img\/goods\/" + goods.goods_img + "\" style=\"width:4rem;height: 4rem;\" class=\"mr-3\" alt=\"商品图片\">";
+                            comment_div += "                        <div class=\"media-body\">";
+                            comment_div += "                            <h5 class=\"mt-0\">" + goods.goods_name + "<\/h5>";
+                            comment_div += "                        <\/div>";
+                            comment_div += "                    <\/div>";
+                            comment_div += "                    <br\/>";
+                            comment_div += "                    <div class=\"input-group mb-3\">";
+                            comment_div += "                        <div class=\"input-group-prepend\">";
+                            comment_div += "                            <label class=\"input-group-text\" for=\"inputGroupSelect01\">Options<\/label>";
+                            comment_div += "                        <\/div>";
+                            comment_div += "                        <select class=\"custom-select\" id=\"star\">";
+                            comment_div += "                            <option selected>请选择<\/option>";
+                            comment_div += "                            <option value=\"1\">⭐<\/option>";
+                            comment_div += "                            <option value=\"2\">⭐⭐<\/option>";
+                            comment_div += "                            <option value=\"3\">⭐⭐⭐<\/option>";
+                            comment_div += "                            <option value=\"4\">⭐⭐⭐⭐<\/option>";
+                            comment_div += "                            <option value=\"5\">⭐⭐⭐⭐⭐<\/option>";
+                            comment_div += "                        <\/select>";
+                            comment_div += "                    <\/div>";
+                            comment_div += "                    <div class=\"input-group\">";
+                            comment_div += "                        <div class=\"input-group-prepend\">";
+                            comment_div += "                            <span class=\"input-group-text\">商品评价<\/span>";
+                            comment_div += "                        <\/div>";
+                            comment_div += "                        <textarea id=\"comment_sub\" class=\"form-control\" aria-label=\"With textarea\"><\/textarea>";
+                            comment_div += "                    <\/div><\/div>";
+                            comment_div += "                    <hr \/>";
+                            $("div#comment_body").append(comment_div);
+                        }
+
+                    });
+
+
+                });
+
+                $("button#sumbit_comment").click(function () {
+                    var data = [];
+
+                    for (let index = 0; index < comment_num; index++) {
+                        console.log($("#data_form_" + index).find("#star").find("option:selected").val())
+                        data[index] = {
+                            comment_id: $("#data_form_" + index).attr('value'),
+                            start: $("#data_form_" + index).find("#star").find("option:selected").val(),
+                            content: $("#data_form_" + index).find("#comment_sub").val(),
+                            status: "1"
+                        }
+                    }
+                    console.log(data)
+                    var settings = {
+                        "url": "http://127.0.0.1:8085/order/sumbitComment",
+                        "method": "POST",
+                        "timeout": 0,
+                        "data": JSON.stringify(data),
+                        "async": false,
+                        "crossDomain": true,
+                        "headers": {
+                            "token": window.localStorage.getItem("token"),
+                            "Content-Type": "application/json"
+                        },
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        $("#success-modal").modal('show');
+                    });
+                });
+
+                $("button#confirm").click(function () {
+                    var order_id = $(this).attr("value");
+                    var settings = {
+                        "url": "http://127.0.0.1:8085/order/confirmOrder",
+                        "method": "POST",
+                        "timeout": 0,
+                        "data": JSON.stringify({
+                            "order_id": order_id
+                        }),
+                        "async": false,
+                        "crossDomain": true,
+                        "headers": {
+                            "token": window.localStorage.getItem("token"),
+                            "Content-Type": "application/json"
+                        },
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        $("#success-modal").modal('show');
+                    });
+                });
+
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <div style="
+    height: auto;
+    margin: 0 10% 0 10%;
+    ">
+        <div style="
+            height: auto;
+        ">
+
+            <div>
+                <script type="text/javascript" src="common/nav.js"></script>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">首页</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">下单记录
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <script type="text/javascript" src="common/left_info.js"></script>
+
+
+                <!-- 右侧订单信息 -->
+                <div id="main" style="float: left; width: 74%; height: auto; margin-left:26%">
+                    <!-- 商品卡片 -->
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">序号</th>
+                                <th scope="col">商品名称</th>
+                                <th scope="col">下单数量</th>
+                                <th scope="col">总价</th>
+                                <th scope="col">状态</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="order_list">
+
+                        </tbody>
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+    <!-- success-pay-modal -->
+    <div class="modal fade" id="success-pay-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">支付成功</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-center">
+                        <svg t="1673618252071" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                            xmlns="http://www.w3.org/2000/svg" p-id="2732" width="64" height="64">
+                            <path
+                                d="M512 149.333333c200.298667 0 362.666667 162.368 362.666667 362.666667s-162.368 362.666667-362.666667 362.666667S149.333333 712.298667 149.333333 512 311.701333 149.333333 512 149.333333z m0 64c-164.949333 0-298.666667 133.717333-298.666667 298.666667s133.717333 298.666667 298.666667 298.666667 298.666667-133.717333 298.666667-298.666667-133.717333-298.666667-298.666667-298.666667z m169.045333 127.04l45.909334 44.586667-271.829334 279.722667-136.832-141.952 46.08-44.416 90.944 94.336 225.728-232.277334z"
+                                fill="#1afa29" p-id="2733"></path>
+                        </svg>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            id="success-reload">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- detail-order-modal -->
+    <div class="modal fade" id="detail-order-modal" tabindex="-1" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">订单详情</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal_address">
+                    </div>
+                    <hr />
+                    <div id="modal_goods"></div>
+                    <div id="modal_info">
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- detail-order-modal -->
+    <div class="modal fade" id="detail-order-modal" tabindex="-1" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">订单详情</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal_address">
+                    </div>
+                    <hr />
+                    <div id="modal_goods"></div>
+                    <div id="modal_info">
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- comment-modal -->
+    <div class="modal fade" id="comment-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">订单评价</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="comment_body">
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            id="sumbit_comment">提交评价</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
